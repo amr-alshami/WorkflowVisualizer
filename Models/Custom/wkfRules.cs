@@ -1,4 +1,4 @@
-﻿namespace WorkflowVisualizer.Models
+﻿namespace WorkflowVisualizer.Models.Custom
 {
     public class wkfRules
     {

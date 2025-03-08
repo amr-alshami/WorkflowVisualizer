@@ -45,7 +45,7 @@ cd workflow-visualizer
 
 - **MainWindow.xaml.cs**: The main window code-behind file that handles UI interactions and drawing the workflow graph.
 - **ViewModels/WorkflowViewModel.cs**: The ViewModel class that manages workflow data, filtering, and node/edge creation.
-- **Models**: Contains model classes representing database entities such as `WkfActn`, `WkfActnCode`, `WkfRule`, and `WorkflowNode`.
+- **Models**: Contains model classes representing database entities such as `WkfActn`, `WkfActnCode`, `WkfRule`, and some custom ones like `WorkflowModel`,`WorkflowNode`.
 - **WorkflowVisualizer.csproj**: The project file with dependencies and build configurations.
 
 ## Contributing

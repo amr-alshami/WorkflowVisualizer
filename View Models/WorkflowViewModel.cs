@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using WorkflowVisualizer.Data;
 using WorkflowVisualizer.Models;
+using WorkflowVisualizer.Models.Custom;
 
 namespace WorkflowVisualizer.ViewModels
 {
@@ -16,9 +17,9 @@ namespace WorkflowVisualizer.ViewModels
         public ObservableCollection<WorkflowModel> Workflows { get; set; }
         public ICollectionView FilteredWorkflows { get; set; } // Expose the filtered collection
 
-        private Canvas _workflowCanvas;
-        private List<WkfRule> _wkfRules;
-        private List<WkfActnCode> _wkfActionCodes;
+        private Canvas _workflowCanvas { get; set; }
+        private readonly List<WkfRule> _wkfRules = new List<WkfRule>();
+        private readonly List<WkfActnCode> _wkfActionCodes = new List<WkfActnCode>();
 
         public WorkflowViewModel(Canvas workflowCanvas)
         {
@@ -28,34 +29,20 @@ namespace WorkflowVisualizer.ViewModels
 
             _workflowCanvas = workflowCanvas;
 
-            // Load the Data asynchronously
-            LoadDataAsync();
-        }
-
-        private async void LoadDataAsync()
-        {
-            try
+            // Load the Data
+            using (var context = new WkfDbContext())
             {
-                using (var context = new WkfDbContext())
+                var wkfModls = new ObservableCollection<WkfModl>(context.WkfModls);
+                foreach (var wkf in wkfModls)
                 {
-                    var wkfModls = await context.WkfModls.ToListAsync();
-                    foreach (var wkf in wkfModls)
-                    {
-                        Workflows.Add(new WorkflowModel { WorkflowId = wkf.ModelCde, WorkflowName = wkf.ModelDsc });
-                    }
-                    _wkfRules = await context.WkfRules.ToListAsync();
-                    _wkfActionCodes = await context.WkfActnCodes.ToListAsync();
+                    Workflows.Add(new WorkflowModel { WorkflowId = wkf.ModelCde, WorkflowName = wkf.ModelDsc });
                 }
+                _wkfRules = new List<WkfRule>(context.WkfRules);
+                _wkfActionCodes = new List<WkfActnCode>(context.WkfActnCodes);
+            }
 
-                // Wrap the Workflows collection in a CollectionViewSource
-                FilteredWorkflows = CollectionViewSource.GetDefaultView(Workflows);
-                OnPropertyChanged(nameof(FilteredWorkflows));
-            }
-            catch (Exception ex)
-            {
-                // Handle exceptions (e.g., log the error)
-                Console.WriteLine($"Error loading data: {ex.Message}");
-            }
+            // Wrap the Workflows collection in a CollectionViewSource
+            FilteredWorkflows = CollectionViewSource.GetDefaultView(Workflows);
         }
 
         public async Task GetWorkflowDetails(WorkflowModel workflow)
