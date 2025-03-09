@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using WorkflowVisualizer.Models;
 
@@ -18,6 +20,8 @@ public partial class WkfDbContext : DbContext
     public virtual DbSet<WkfActn> WkfActns { get; set; }
 
     public virtual DbSet<WkfActnCode> WkfActnCodes { get; set; }
+
+    public virtual DbSet<WkfMiscInfo> WkfMiscInfos { get; set; }
 
     public virtual DbSet<WkfModl> WkfModls { get; set; }
 
@@ -120,6 +124,23 @@ public partial class WkfDbContext : DbContext
                 .HasDefaultValue("F")
                 .IsFixedLength()
                 .HasColumnName("SYS_IND");
+        });
+
+        modelBuilder.Entity<WkfMiscInfo>(entity =>
+        {
+            entity.HasKey(e => e.MiscInfoId).HasName("PK__WKF_MISC_INFO__A7EC83712DF1BF10");
+
+            entity.ToTable("WKF_MISC_INFO");
+
+            entity.Property(e => e.MiscInfoId).HasColumnName("MISC_INFO_ID");
+            entity.Property(e => e.Detail)
+                .HasMaxLength(1000)
+                .HasColumnName("DETAIL");
+            entity.Property(e => e.RefId).HasColumnName("REF_ID");
+            entity.Property(e => e.RefType)
+                .HasMaxLength(20)
+                .IsUnicode(false)
+                .HasColumnName("REF_TYPE");
         });
 
         modelBuilder.Entity<WkfModl>(entity =>

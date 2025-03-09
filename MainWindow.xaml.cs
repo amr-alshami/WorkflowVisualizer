@@ -99,7 +99,7 @@ namespace WorkflowVisualizer
             };
 
             DetailsPanel.BeginAnimation(WidthProperty, animation);
-            ExpandCollapseButton.Content = _isExpanded ? "◄ Collapse" : "➤ Expand";
+            ExpandCollapseButton.Content = _isExpanded ? "↪ Collapse" : "↩ Expand";
         }
 
 

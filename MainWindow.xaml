@@ -35,7 +35,7 @@
                           ItemsSource="{Binding FilteredWorkflows}" SelectionChanged="WorkflowListView_SelectionChanged">
                     <ListView.ItemTemplate>
                         <DataTemplate>
-                            <TextBlock Text="{Binding WorkflowName}" FontSize="12" Margin="2"/>
+                            <TextBlock Text="{Binding WorkflowName}" FontSize="12" Margin="2" ToolTip="{Binding Details}"/>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
@@ -58,7 +58,7 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="1" Margin="20">
-                        <Button x:Name="ExpandCollapseButton" Content="➤ Expand" Click="TogglePanelSize"
+                        <Button x:Name="ExpandCollapseButton" Content="↩ Expand" Click="TogglePanelSize"
                                 HorizontalAlignment="Right" Width="80"/>
 
                         <TextBlock Text="Details" FontSize="16" FontWeight="Bold"/>

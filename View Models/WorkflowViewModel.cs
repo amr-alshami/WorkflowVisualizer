@@ -20,6 +20,7 @@ namespace WorkflowVisualizer.ViewModels
         private Canvas _workflowCanvas { get; set; }
         private readonly List<WkfRule> _wkfRules = new List<WkfRule>();
         private readonly List<WkfActnCode> _wkfActionCodes = new List<WkfActnCode>();
+        private readonly List<WkfMiscInfo> _wkfMiscInfo = new List<WkfMiscInfo>();
 
         public WorkflowViewModel(Canvas workflowCanvas)
         {
@@ -33,12 +34,14 @@ namespace WorkflowVisualizer.ViewModels
             using (var context = new WkfDbContext())
             {
                 var wkfModls = new ObservableCollection<WkfModl>(context.WkfModls);
+                _wkfMiscInfo = new List<WkfMiscInfo>(context.WkfMiscInfos);
                 foreach (var wkf in wkfModls)
                 {
-                    Workflows.Add(new WorkflowModel { WorkflowId = wkf.ModelCde, WorkflowName = wkf.ModelDsc });
+                    Workflows.Add(new WorkflowModel { WorkflowId = wkf.ModelCde, WorkflowName = wkf.ModelDsc, Details = _wkfMiscInfo?.LastOrDefault(t => t.RefType == "Model" && t.RefId == wkf.ModelCde)?.Detail ?? wkf.FormulaDsc ?? "" });
                 }
                 _wkfRules = new List<WkfRule>(context.WkfRules);
                 _wkfActionCodes = new List<WkfActnCode>(context.WkfActnCodes);
+            
             }
 
             // Wrap the Workflows collection in a CollectionViewSource
@@ -49,7 +52,6 @@ namespace WorkflowVisualizer.ViewModels
         {
             try
             {
-                workflow.Details = "XYZ"; // ToDo: from new misc table
                 var _wkfActns = await GetWorkflowActions(workflow.WorkflowId);
                 foreach (var actn in _wkfActns)
                 {
@@ -59,7 +61,7 @@ namespace WorkflowVisualizer.ViewModels
                         {
                             RuleId = actn.RuleId ?? 0,
                             RuleName = _wkfRules.FirstOrDefault(t => t.RuleId == actn.RuleId)?.RuleDsc,
-                            Details = "XYZ", // ToDo: from new misc table
+                            Details = _wkfMiscInfo?.LastOrDefault(t => t.RefType == "Rule" && t.RefId == actn.RuleId)?.Detail ?? string.Empty,
                             Actions = new List<WkfActions>()
                         });
                     }
@@ -71,7 +73,7 @@ namespace WorkflowVisualizer.ViewModels
                             ActionCode = actn.ActionCde ?? 0,
                             ActionName = _wkfActionCodes.FirstOrDefault(t => t.ActionCde == actn.ActionCde)?.ActionDsc,
                             ActionSequence = actn.ExeSequence ?? 0,
-                            Details = "XYZ", // ToDo: from new misc table
+                            Details = _wkfMiscInfo?.LastOrDefault(t => t.RefType == "Action Code" && t.RefId == actn.ActionCde)?.Detail ?? string.Empty,
                         });
                     }
                 }
@@ -92,7 +94,7 @@ namespace WorkflowVisualizer.ViewModels
             FilteredWorkflows.Filter = item =>
             {
                 var workflow = item as WorkflowModel;
-                return workflow.WorkflowName.ToLower().Contains(searchText.ToLower());
+                return workflow?.WorkflowName?.Contains(searchText, StringComparison.CurrentCultureIgnoreCase) ?? false;
             };
         }
 
@@ -102,7 +104,7 @@ namespace WorkflowVisualizer.ViewModels
             Edges.Clear();
 
             // Add Start Node
-            var startNode = new WorkflowNode("Start", 0, 0, "Start", "Start Node");
+            var startNode = new WorkflowNode("Start", 0, 0, "Start", "The entry point of the business process workflow");
             Nodes.Add(startNode);
 
             // Add Rule Nodes as children of the Start Node
@@ -111,7 +113,7 @@ namespace WorkflowVisualizer.ViewModels
 
             foreach (var rule in workflow.WorkflowRules)
             {
-                var ruleNode = new WorkflowNode(rule.RuleName, 0, 0, "Rule", rule.Details);
+                var ruleNode = new WorkflowNode(rule.RuleName ?? "", 0, 0, "Rule", rule.Details);
                 Nodes.Add(ruleNode);
 
                 // Connect Start Node to Rule Node
@@ -126,7 +128,7 @@ namespace WorkflowVisualizer.ViewModels
                     for (int i = 0; i < sortedActions.Count; i++)
                     {
                         var action = sortedActions[i];
-                        var actionNode = new WorkflowNode(action.ActionName, 0, 0, "Action", action.Details, action.ActionSequence);
+                        var actionNode = new WorkflowNode(action.ActionName ?? "", 0, 0, "Action", action.Details, action.ActionSequence);
                         Nodes.Add(actionNode);
 
                         // Position action nodes sequentially
@@ -151,7 +153,7 @@ namespace WorkflowVisualizer.ViewModels
             }
 
             // Add End Node
-            var endNode = new WorkflowNode("End", 0, 0, "End", "End Node");
+            var endNode = new WorkflowNode("End", 0, 0, "End", "The end point of the business process workflow");
             Nodes.Add(endNode);
 
             // Connect all last-level Action Nodes to the End Node
@@ -239,7 +241,7 @@ namespace WorkflowVisualizer.ViewModels
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
