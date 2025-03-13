@@ -10,7 +10,7 @@
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
-                <Border BorderBrush="Black" BorderThickness="1,1,1,0"/>
+                <Border BorderBrush="Gray" BorderThickness="1,1,1,0"/>
 
                 <Grid Grid.Row="0" Margin="0">
                     <Grid.RowDefinitions>
@@ -18,7 +18,7 @@
                         <RowDefinition Height="*" />
                     </Grid.RowDefinitions>
                     <!-- Header -->
-                    <TextBlock Text="Workflows" FontSize="16" FontWeight="Bold" HorizontalAlignment ="Center"  Margin="5" Grid.Row="0" />
+                    <TextBlock Text="Workflows" FontSize="16" FontWeight="Bold" Foreground="Gray" HorizontalAlignment ="Center"  Margin="5" Grid.Row="0" />
 
                     <!-- Search Box -->
                     <Grid Grid.Row="1" Margin="0">

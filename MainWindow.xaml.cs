@@ -58,7 +58,6 @@ namespace WorkflowVisualizer
 
         private void ShowDetailsPanel(WorkflowNode node, Shape selectedNode)
         {
-
             // Update the details for the selected node
             NodeNameText.Text = node.Name;
             NodeDetailsText.Text = node.Details;
@@ -74,8 +73,6 @@ namespace WorkflowVisualizer
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
             };
             DetailsTransform.BeginAnimation(TranslateTransform.XProperty, slideIn);
-
-
         }
 
         private void CloseDetailsPanel(object sender, RoutedEventArgs e)
@@ -102,8 +99,6 @@ namespace WorkflowVisualizer
             ExpandCollapseButton.Content = _isExpanded ? "↪ Collapse" : "↩ Expand";
         }
 
-
-
         private void DrawGraph()
         {
             WorkflowCanvas.Children.Clear();
@@ -120,6 +115,7 @@ namespace WorkflowVisualizer
                 DrawNode(node);
             }
         }
+
         private void DrawNode(WorkflowNode node)
         {
             // Measure the text size
@@ -142,12 +138,14 @@ namespace WorkflowVisualizer
             node.Width = textWidth + 40; // Add padding
             node.Height = textHeight + 20; // Add padding
 
+            Shape shape;
+
             if (node.NodeType == "Start" || node.NodeType == "End")
             {
                 node.Width = 50;
                 node.Height = 45;
                 // Draw Start and End nodes as circles
-                var ellipse = new Ellipse
+                shape = new Ellipse
                 {
                     Width = node.Width,
                     Height = node.Height, // Circle: width = height
@@ -157,26 +155,12 @@ namespace WorkflowVisualizer
                 };
 
                 // Apply styles based on NodeType
-                ellipse.Fill = node.NodeType == "Start" ? Brushes.Green : Brushes.Red;
-
-                Canvas.SetLeft(ellipse, node.X - node.Width / 2); // Center the node horizontally
-                Canvas.SetTop(ellipse, node.Y - node.Height / 2); // Center the node vertically
-
-                // Add text to the circle
-                Canvas.SetLeft(textBlock, node.X - textWidth / 2); // Center text horizontally
-                Canvas.SetTop(textBlock, node.Y - textHeight / 2); // Center text vertically
-
-                // Handle click event to show details panel
-                ellipse.MouseLeftButtonDown += (s, e) => ShowDetailsPanel(node, ellipse);
-                textBlock.MouseLeftButtonDown += (s, e) => ShowDetailsPanel(node, ellipse);
-
-                WorkflowCanvas.Children.Add(ellipse);
-                WorkflowCanvas.Children.Add(textBlock);
+                shape.Fill = node.NodeType == "Start" ? Brushes.Green : Brushes.Red;
             }
             else
             {
                 // Draw Rule and Action nodes as rectangles
-                var rectangle = new Rectangle
+                shape = new Rectangle
                 {
                     Width = node.Width,
                     Height = node.Height,
@@ -189,34 +173,48 @@ namespace WorkflowVisualizer
                 switch (node.NodeType)
                 {
                     case "Rule":
-                        rectangle.Fill = Brushes.LightBlue;
+                        shape.Fill = Brushes.LightBlue;
                         break;
                     case "Action":
-                        rectangle.Fill = Brushes.LightYellow;
-                        rectangle.RadiusX = 5;
-                        rectangle.RadiusY = 5;
+                        shape.Fill = Brushes.LightYellow;
+                        ((Rectangle)shape).RadiusX = 5;
+                        ((Rectangle)shape).RadiusY = 5;
                         break;
                     default:
-                        rectangle.Fill = Brushes.LightGray;
+                        shape.Fill = Brushes.LightGray;
                         break;
                 }
-
-                Canvas.SetLeft(rectangle, node.X - node.Width / 2); // Center the node horizontally
-                Canvas.SetTop(rectangle, node.Y - node.Height / 2); // Center the node vertically
-
-                // Add text to the rectangle
-                Canvas.SetLeft(textBlock, node.X - textWidth / 2); // Center text horizontally
-                Canvas.SetTop(textBlock, node.Y - textHeight / 2); // Center text vertically
-
-                // Handle click event to show details panel
-                rectangle.MouseLeftButtonDown += (s, e) => ShowDetailsPanel(node, rectangle);
-                textBlock.MouseLeftButtonDown += (s, e) => ShowDetailsPanel(node, rectangle);
-
-                WorkflowCanvas.Children.Add(rectangle);
-                WorkflowCanvas.Children.Add(textBlock);
             }
-        }
 
+            Canvas.SetLeft(shape, node.X - node.Width / 2); // Center the node horizontally
+            Canvas.SetTop(shape, node.Y - node.Height / 2); // Center the node vertically
+
+            // Add text to the rectangle
+            Canvas.SetLeft(textBlock, node.X - textWidth / 2); // Center text horizontally
+            Canvas.SetTop(textBlock, node.Y - textHeight / 2); // Center text vertically
+
+            // Handle click event to show details panel
+            shape.MouseLeftButtonDown += (s, e) => ShowDetailsPanel(node, shape);
+            textBlock.MouseLeftButtonDown += (s, e) => ShowDetailsPanel(node, shape);
+
+            WorkflowCanvas.Children.Add(shape);
+            WorkflowCanvas.Children.Add(textBlock);
+
+            // Animate the node
+            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.5));
+            shape.BeginAnimation(OpacityProperty, fadeIn);
+            textBlock.BeginAnimation(OpacityProperty, fadeIn);
+
+            var translateTransform = new TranslateTransform();
+            shape.RenderTransform = translateTransform;
+            textBlock.RenderTransform = translateTransform;
+
+            var slideIn = new DoubleAnimation(-5, 0, TimeSpan.FromSeconds(0.5))
+            {
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+            };
+            translateTransform.BeginAnimation(TranslateTransform.XProperty, slideIn);
+        }
 
         private void DrawEdge(WorkflowEdge edge)
         {
@@ -229,14 +227,21 @@ namespace WorkflowVisualizer
             {
                 X1 = startPoint.X,
                 Y1 = startPoint.Y,
-                X2 = endPoint.X,
-                Y2 = endPoint.Y,
+                X2 = startPoint.X, // Start from the same point
+                Y2 = startPoint.Y, // Start from the same point
                 Stroke = Brushes.Black,
                 StrokeThickness = 0.8,
                 StrokeDashArray = new DoubleCollection { 2, 2 } // Dotted line pattern
             };
 
             WorkflowCanvas.Children.Add(line);
+
+            // Animate the line drawing
+            var x2Animation = new DoubleAnimation(startPoint.X, endPoint.X, TimeSpan.FromSeconds(0.5));
+            var y2Animation = new DoubleAnimation(startPoint.Y, endPoint.Y, TimeSpan.FromSeconds(0.5));
+
+            line.BeginAnimation(Line.X2Property, x2Animation);
+            line.BeginAnimation(Line.Y2Property, y2Animation);
 
             // Draw the arrowhead at the midpoint of the line
             DrawArrowhead(startPoint, endPoint);
@@ -277,6 +282,5 @@ namespace WorkflowVisualizer
 
             WorkflowCanvas.Children.Add(arrowhead);
         }
-
     }
 }
