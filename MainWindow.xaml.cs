@@ -13,6 +13,7 @@ namespace WorkflowVisualizer
     public partial class MainWindow : Window
     {
         private WorkflowViewModel _viewModel;
+        private WorkflowModel _model;
         private bool _isExpanded = false;
 
         public MainWindow()
@@ -43,21 +44,23 @@ namespace WorkflowVisualizer
         {
             if (WorkflowListView.SelectedItem is WorkflowModel selectedWorkflow)
             {
+                _model = selectedWorkflow;
                 // Clear existing nodes and edges
                 _viewModel.Nodes.Clear();
                 _viewModel.Edges.Clear();
 
                 // Load the selected workflow details
-                await _viewModel.GetWorkflowDetails(selectedWorkflow);
+                await _viewModel.GetWorkflowDetails(_model);
 
                 // Draw the workflow graph
-                DrawGraph();
+                DrawGraph(true);
             }
         }
 
 
         private void ShowDetailsPanel(WorkflowNode node, Shape selectedNode)
         {
+            Resize("Out");
             // Update the details for the selected node
             NodeNameText.Text = node.Name;
             NodeDetailsText.Text = node.Details;
@@ -77,6 +80,7 @@ namespace WorkflowVisualizer
 
         private void CloseDetailsPanel(object sender, RoutedEventArgs e)
         {
+            Resize("In");
             // Slide out the details panel
             var slideOut = new DoubleAnimation(DetailsPanel.Width, TimeSpan.FromSeconds(0.3))
             {
@@ -99,30 +103,31 @@ namespace WorkflowVisualizer
             ExpandCollapseButton.Content = _isExpanded ? "↪ Collapse" : "↩ Expand";
         }
 
-        private void DrawGraph()
+        private void DrawGraph(bool isAnimate = true)
         {
             WorkflowCanvas.Children.Clear();
 
             // Draw edges (connections first so they appear below nodes)
             foreach (var edge in _viewModel.Edges)
             {
-                DrawEdge(edge);
+                DrawEdge(edge, isAnimate);
             }
 
             // Draw nodes
             foreach (var node in _viewModel.Nodes)
             {
-                DrawNode(node);
+                DrawNode(node, isAnimate);
             }
         }
 
-        private void DrawNode(WorkflowNode node)
+        private void DrawNode(WorkflowNode node, bool isAnimate = true)
         {
             // Measure the text size
             var textBlock = new TextBlock
             {
                 Text = node.Name,
-                FontWeight = FontWeights.Bold,
+                FontWeight = FontWeights.Medium,
+                FontSize = 12,
                 Foreground = (node.NodeType == "Start" || node.NodeType == "End") ? Brushes.White : Brushes.Black,
                 TextAlignment = TextAlignment.Center,
                 Cursor = Cursors.Hand
@@ -135,15 +140,15 @@ namespace WorkflowVisualizer
             double textHeight = textBlock.DesiredSize.Height;
 
             // Define node size and shape
-            node.Width = textWidth + 40; // Add padding
-            node.Height = textHeight + 20; // Add padding
+            node.Width = textWidth + 20; // Add padding
+            node.Height = textHeight + 10; // Add padding
 
             Shape shape;
 
             if (node.NodeType == "Start" || node.NodeType == "End")
             {
-                node.Width = 50;
-                node.Height = 45;
+                node.Width = 40;
+                node.Height = 35;
                 // Draw Start and End nodes as circles
                 shape = new Ellipse
                 {
@@ -200,23 +205,26 @@ namespace WorkflowVisualizer
             WorkflowCanvas.Children.Add(shape);
             WorkflowCanvas.Children.Add(textBlock);
 
-            // Animate the node
-            var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.5));
-            shape.BeginAnimation(OpacityProperty, fadeIn);
-            textBlock.BeginAnimation(OpacityProperty, fadeIn);
-
-            var translateTransform = new TranslateTransform();
-            shape.RenderTransform = translateTransform;
-            textBlock.RenderTransform = translateTransform;
-
-            var slideIn = new DoubleAnimation(-5, 0, TimeSpan.FromSeconds(0.5))
+            if (isAnimate)
             {
-                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-            };
-            translateTransform.BeginAnimation(TranslateTransform.XProperty, slideIn);
+                // Animate the node
+                var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.5));
+                shape.BeginAnimation(OpacityProperty, fadeIn);
+                textBlock.BeginAnimation(OpacityProperty, fadeIn);
+
+                var translateTransform = new TranslateTransform();
+                shape.RenderTransform = translateTransform;
+                textBlock.RenderTransform = translateTransform;
+
+                var slideIn = new DoubleAnimation(-5, 0, TimeSpan.FromSeconds(0.5))
+                {
+                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
+                };
+                translateTransform.BeginAnimation(TranslateTransform.XProperty, slideIn);
+            }
         }
 
-        private void DrawEdge(WorkflowEdge edge)
+        private void DrawEdge(WorkflowEdge edge, bool isAnimate = true)
         {
             // Calculate the start and end points of the line
             Point startPoint = new Point(edge.From.X, edge.From.Y); // Center of source node
@@ -234,14 +242,24 @@ namespace WorkflowVisualizer
                 StrokeDashArray = new DoubleCollection { 2, 2 } // Dotted line pattern
             };
 
-            WorkflowCanvas.Children.Add(line);
 
-            // Animate the line drawing
-            var x2Animation = new DoubleAnimation(startPoint.X, endPoint.X, TimeSpan.FromSeconds(0.5));
-            var y2Animation = new DoubleAnimation(startPoint.Y, endPoint.Y, TimeSpan.FromSeconds(0.5));
+            if (isAnimate)
+            {
 
-            line.BeginAnimation(Line.X2Property, x2Animation);
-            line.BeginAnimation(Line.Y2Property, y2Animation);
+                WorkflowCanvas.Children.Add(line);
+                // Animate the line drawing
+                var x2Animation = new DoubleAnimation(startPoint.X, endPoint.X, TimeSpan.FromSeconds(0.5));
+                var y2Animation = new DoubleAnimation(startPoint.Y, endPoint.Y, TimeSpan.FromSeconds(0.5));
+
+                line.BeginAnimation(Line.X2Property, x2Animation);
+                line.BeginAnimation(Line.Y2Property, y2Animation);
+            }
+            else
+            {
+                line.X2 = endPoint.X;
+                line.Y2 = endPoint.Y;
+                WorkflowCanvas.Children.Add(line);
+            }
 
             // Draw the arrowhead at the midpoint of the line
             DrawArrowhead(startPoint, endPoint);
@@ -281,6 +299,54 @@ namespace WorkflowVisualizer
             };
 
             WorkflowCanvas.Children.Add(arrowhead);
+        }
+        private void ZoomIn_Click(object sender, RoutedEventArgs e)
+        {
+            // Logic to zoom in on the canvas
+            var scaleTransform = new ScaleTransform(1.2, 1.2);
+            WorkflowCanvas.LayoutTransform = scaleTransform;
+            refreshView();
+        }
+
+        private void ZoomOut_Click(object sender, RoutedEventArgs e)
+        {
+            // Logic to zoom out on the canvas
+            var scaleTransform = new ScaleTransform(0.8, 0.8);
+            WorkflowCanvas.LayoutTransform = scaleTransform;
+            // Force a layout update to refresh the ActualWidth property
+            WorkflowCanvas.UpdateLayout();
+
+            refreshView();
+        }
+
+        private void Resize(string type)
+        {
+            if (type == "Out")
+            {
+                WorkflowCanvas.Margin = new Thickness(200, 0, 200, 0);
+            }
+            else
+            {
+                WorkflowCanvas.Margin = new Thickness(200, 0, 0, 0);
+            }
+
+            // Force a layout update to refresh the ActualWidth property
+            WorkflowCanvas.UpdateLayout();
+
+            refreshView();
+        }
+
+        private void refreshView()
+        {
+            // Clear existing nodes and edges
+            _viewModel.Nodes.Clear();
+            _viewModel.Edges.Clear();
+
+            // Load the selected workflow details
+            _viewModel.CreateNodesAndEdges(_model);
+
+            // Draw the workflow graph
+            DrawGraph(false);
         }
     }
 }

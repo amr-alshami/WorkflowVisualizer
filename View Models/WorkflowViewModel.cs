@@ -98,7 +98,7 @@ namespace WorkflowVisualizer.ViewModels
             };
         }
 
-        private void CreateNodesAndEdges(WorkflowModel workflow)
+        public void CreateNodesAndEdges(WorkflowModel workflow)
         {
             Nodes.Clear();
             Edges.Clear();
