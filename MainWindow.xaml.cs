@@ -4,6 +4,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using WorkflowVisualizer.Models.Custom;
 using WorkflowVisualizer.ViewModels;
@@ -58,7 +59,7 @@ namespace WorkflowVisualizer
         }
 
 
-        private void ShowDetailsPanel(WorkflowNode node, Shape selectedNode)
+        private void ShowDetailsPanel(WorkflowNode node)
         {
             Resize("Out");
             // Update the details for the selected node
@@ -122,108 +123,137 @@ namespace WorkflowVisualizer
 
         private void DrawNode(WorkflowNode node, bool isAnimate = true)
         {
-            // Measure the text size
-            var textBlock = new TextBlock
+            // Check if an icon exists for the node
+            var iconPath = $"pack://application:,,,/Resources/{node.Name}.png";
+            var iconUri = new Uri(iconPath, UriKind.Absolute);
+            bool iconExists = false;
+
+            try
             {
-                Text = node.Name,
-                FontWeight = FontWeights.Medium,
-                FontSize = 12,
-                Foreground = (node.NodeType == "Start" || node.NodeType == "End") ? Brushes.White : Brushes.Black,
-                TextAlignment = TextAlignment.Center,
-                Cursor = Cursors.Hand
-            };
-
-            textBlock.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-            textBlock.Arrange(new Rect(textBlock.DesiredSize));
-
-            double textWidth = textBlock.DesiredSize.Width;
-            double textHeight = textBlock.DesiredSize.Height;
-
-            // Define node size and shape
-            node.Width = textWidth + 20; // Add padding
-            node.Height = textHeight + 10; // Add padding
-
-            Shape shape;
-
-            if (node.NodeType == "Start" || node.NodeType == "End")
-            {
-                node.Width = 40;
-                node.Height = 35;
-                // Draw Start and End nodes as circles
-                shape = new Ellipse
+                var iconStream = Application.GetResourceStream(iconUri);
+                if (iconStream != null)
                 {
-                    Width = node.Width,
-                    Height = node.Height, // Circle: width = height
-                    Stroke = Brushes.Black,
-                    StrokeThickness = 1,
-                    Cursor = Cursors.Hand
+                    iconExists = true;
+                }
+            }
+            catch
+            {
+                // Icon does not exist
+            }
+
+            if (iconExists)
+            {
+                // Draw node with icon
+                var image = new Image
+                {
+                    Source = new BitmapImage(iconUri),
+                    Cursor = Cursors.Hand,
+                    ToolTip = node.Name
+                    
                 };
 
-                // Apply styles based on NodeType
-                shape.Fill = node.NodeType == "Start" ? Brushes.Green : Brushes.Red;
+                setImageSize(image, node.Name);
+
+                Canvas.SetLeft(image, node.X - image.Width / 2);
+                Canvas.SetTop(image, node.Y - image.Height / 2);
+
+                image.MouseLeftButtonDown += (s, e) => ShowDetailsPanel(node);
+
+                WorkflowCanvas.Children.Add(image);
+
+                if (isAnimate)
+                {
+                    var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.5));
+                    image.BeginAnimation(OpacityProperty, fadeIn);
+                }
             }
             else
             {
-                // Draw Rule and Action nodes as rectangles
-                shape = new Rectangle
+                // Draw default rule node with rule icon
+                var ruleIconPath = "pack://application:,,,/Resources/rule.png";
+                var ruleIconUri = new Uri(ruleIconPath, UriKind.Absolute);
+
+                var stackPanel = new StackPanel
                 {
-                    Width = node.Width,
-                    Height = node.Height,
-                    Stroke = Brushes.Black,
-                    StrokeThickness = 1,
-                    Cursor = Cursors.Hand
+                    Orientation = Orientation.Horizontal,
+                    Background = Brushes.White,
+                    Cursor = Cursors.Hand,
+                    ToolTip = node.Details
                 };
 
-                // Apply styles based on NodeType
-                switch (node.NodeType)
+                var icon = new Image
                 {
-                    case "Rule":
-                        shape.Fill = Brushes.LightBlue;
-                        break;
-                    case "Action":
-                        shape.Fill = Brushes.LightYellow;
-                        ((Rectangle)shape).RadiusX = 5;
-                        ((Rectangle)shape).RadiusY = 5;
-                        break;
-                    default:
-                        shape.Fill = Brushes.LightGray;
-                        break;
+                    Source = new BitmapImage(ruleIconUri),
+                    Width = 45,
+                    Height = 45,
+                    Margin = new Thickness(-25,-25,5,-25)
+                };
+
+                var textBlock = new TextBlock
+                {
+                    Text = node.Name,
+                    FontWeight = FontWeights.Medium,
+                    FontSize = 12,
+                    Foreground = Brushes.Black,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Margin = new Thickness(-2, 1, 8, 1)
+                };
+
+                stackPanel.Children.Add(icon);
+                stackPanel.Children.Add(textBlock);
+
+                // Create a Border with rounded corners
+                var border = new Border
+                {
+                    CornerRadius = new CornerRadius(10), // Adjust the radius for rounded corners
+                    BorderBrush = Brushes.Gray, // Border color
+                    BorderThickness = new Thickness(2), // Border thickness
+                    Background = Brushes.White, // Background color
+                    Padding = new Thickness(2), // Padding inside the border
+                    Child = stackPanel // Add the StackPanel as the child of the Border
+                };
+
+                // Force a layout update to calculate ActualWidth and ActualHeight
+                border.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                border.Arrange(new Rect(border.DesiredSize));
+
+                // Calculate the position of the border
+                double borderWidth = border.ActualWidth;
+                double borderHeight = border.ActualHeight;
+
+                Canvas.SetLeft(border, node.X - borderWidth / 2);
+                Canvas.SetTop(border, node.Y - borderHeight / 2);
+
+                border.MouseLeftButtonDown += (s, e) => ShowDetailsPanel(node);
+
+                WorkflowCanvas.Children.Add(border);
+
+                if (isAnimate)
+                {
+                    var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.5));
+                    border.BeginAnimation(OpacityProperty, fadeIn);
                 }
-            }
-
-            Canvas.SetLeft(shape, node.X - node.Width / 2); // Center the node horizontally
-            Canvas.SetTop(shape, node.Y - node.Height / 2); // Center the node vertically
-
-            // Add text to the rectangle
-            Canvas.SetLeft(textBlock, node.X - textWidth / 2); // Center text horizontally
-            Canvas.SetTop(textBlock, node.Y - textHeight / 2); // Center text vertically
-
-            // Handle click event to show details panel
-            shape.MouseLeftButtonDown += (s, e) => ShowDetailsPanel(node, shape);
-            textBlock.MouseLeftButtonDown += (s, e) => ShowDetailsPanel(node, shape);
-
-            WorkflowCanvas.Children.Add(shape);
-            WorkflowCanvas.Children.Add(textBlock);
-
-            if (isAnimate)
-            {
-                // Animate the node
-                var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.5));
-                shape.BeginAnimation(OpacityProperty, fadeIn);
-                textBlock.BeginAnimation(OpacityProperty, fadeIn);
-
-                var translateTransform = new TranslateTransform();
-                shape.RenderTransform = translateTransform;
-                textBlock.RenderTransform = translateTransform;
-
-                var slideIn = new DoubleAnimation(-5, 0, TimeSpan.FromSeconds(0.5))
-                {
-                    EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
-                };
-                translateTransform.BeginAnimation(TranslateTransform.XProperty, slideIn);
             }
         }
 
+        private void setImageSize(Image image, string name)
+        {
+            switch (name)
+            {
+                case "Start":
+                    image.Width = 60;
+                    image.Height = 60;
+                    break;
+                case "End":
+                    image.Width = 40;
+                    image.Height = 40;
+                    break;
+                default:
+                    image.Width = 55;
+                    image.Height = 55;
+                    break;
+            }
+        }
         private void DrawEdge(WorkflowEdge edge, bool isAnimate = true)
         {
             // Calculate the start and end points of the line

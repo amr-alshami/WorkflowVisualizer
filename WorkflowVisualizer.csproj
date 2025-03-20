@@ -11,6 +11,16 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Resources\assign.png" />
+    <None Remove="Resources\end.png" />
+    <None Remove="Resources\rule.png" />
+    <None Remove="Resources\start.png" />
+    <None Remove="Resources\take control.png" />
+    <None Remove="Resources\take_control.png" />
+    <None Remove="Resources\workflow.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Folder Include="Views\" />
   </ItemGroup>
 
@@ -22,6 +32,20 @@
     </PackageReference>
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.2" />
     <PackageReference Include="Microsoft.Extensions.Configuration.UserSecrets" Version="9.0.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\assign.png" />
+    <Resource Include="Resources\auto approve.png" />
+    <Resource Include="Resources\auto decline.png" />
+    <Resource Include="Resources\auto execute.png" />
+    <Resource Include="Resources\change status.png" />
+    <Resource Include="Resources\end.png" />
+    <Resource Include="Resources\forward.png" />
+    <Resource Include="Resources\rule.png" />
+    <Resource Include="Resources\start.png" />
+    <Resource Include="Resources\take control.png" />
+    <Resource Include="Resources\workflow.png" />
   </ItemGroup>
 
 </Project>

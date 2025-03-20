@@ -1,7 +1,8 @@
 ﻿<Window x:Class="WorkflowVisualizer.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Workflow Visualizer" WindowState="Maximized">
+        Title="Workflow Visualizer" WindowState="Maximized"        
+        Icon="pack://application:,,,/Resources/workflow.png">
     <Grid>
         <Grid Margin="0">
             <!-- Left Side Grid for Workflow List -->

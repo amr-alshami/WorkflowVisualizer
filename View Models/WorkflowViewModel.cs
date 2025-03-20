@@ -1,7 +1,10 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileSystemGlobbing.Internal;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Linq.Expressions;
 using System.Runtime.CompilerServices;
+using System.Text.RegularExpressions;
 using System.Windows.Controls;
 using System.Windows.Data;
 using WorkflowVisualizer.Data;
@@ -10,7 +13,7 @@ using WorkflowVisualizer.Models.Custom;
 
 namespace WorkflowVisualizer.ViewModels
 {
-    public class WorkflowViewModel : INotifyPropertyChanged
+    public class WorkflowViewModel 
     {
         public ObservableCollection<WorkflowNode> Nodes { get; set; }
         public ObservableCollection<WorkflowEdge> Edges { get; set; }
@@ -21,6 +24,8 @@ namespace WorkflowVisualizer.ViewModels
         private readonly List<WkfRule> _wkfRules = new List<WkfRule>();
         private readonly List<WkfActnCode> _wkfActionCodes = new List<WkfActnCode>();
         private readonly List<WkfMiscInfo> _wkfMiscInfo = new List<WkfMiscInfo>();
+        private readonly List<StusCode> _stsCodes = new List<StusCode>();
+        private readonly List<UserGrupCode> _userGroupCodes= new List<UserGrupCode>();
 
         public WorkflowViewModel(Canvas workflowCanvas)
         {
@@ -35,6 +40,8 @@ namespace WorkflowVisualizer.ViewModels
             {
                 var wkfModls = new ObservableCollection<WkfModl>(context.WkfModls);
                 _wkfMiscInfo = new List<WkfMiscInfo>(context.WkfMiscInfos);
+                _stsCodes = new List<StusCode>(context.StusCodes);
+                _userGroupCodes = new List<UserGrupCode>(context.UserGrupCodes);
                 foreach (var wkf in wkfModls)
                 {
                     Workflows.Add(new WorkflowModel { WorkflowId = wkf.ModelCde, WorkflowName = wkf.ModelDsc, Details = _wkfMiscInfo?.LastOrDefault(t => t.RefType == "Model" && t.RefId == wkf.ModelCde)?.Detail ?? wkf.FormulaDsc ?? "" });
@@ -73,7 +80,8 @@ namespace WorkflowVisualizer.ViewModels
                             ActionCode = actn.ActionCde ?? 0,
                             ActionName = _wkfActionCodes.FirstOrDefault(t => t.ActionCde == actn.ActionCde)?.ActionDsc,
                             ActionSequence = actn.ExeSequence ?? 0,
-                            Details = _wkfMiscInfo?.LastOrDefault(t => t.RefType == "Action Code" && t.RefId == actn.ActionCde)?.Detail ?? string.Empty,
+                            //Details = _wkfMiscInfo?.LastOrDefault(t => t.RefType == "Action Code" && t.RefId == actn.ActionCde)?.Detail ?? string.Empty,
+                            Details = getActionCodeDetails(actn)
                         });
                     }
                 }
@@ -87,6 +95,29 @@ namespace WorkflowVisualizer.ViewModels
                 Console.WriteLine($"Error getting workflow details: {ex.Message}");
             }
         }
+
+        private string getActionCodeDetails(WkfActn actn)
+        {
+            var details = _wkfMiscInfo?.LastOrDefault(t => t.RefType == "Action Code" && t.RefId == actn.ActionCde)?.Detail ?? string.Empty; 
+
+            string[] parts = actn.Params?.Split(',');
+
+            if (parts != null)
+            {
+                 switch (actn.ActionCde)
+                {
+                    case 2:// Forward
+                        details = parts[1].Trim('\'') != "0" ? "Request Forwarded to: " + _userGroupCodes.FirstOrDefault(t => t.UserGrupCde == parts[1].Trim('\''))?.UserGroupDsc + " user group" : details;
+                        break;
+                    case 4: // Change Status
+                        details = "Change Request Status to: ( " + _stsCodes.FirstOrDefault(t => t.StatusCde == parts[0].Trim('\''))?.StatusDsc + " )";
+                        break;
+                }
+            }
+            return details;
+        }
+
+        
 
         public void FilterWorkflows(string searchText)
         {
@@ -240,10 +271,5 @@ namespace WorkflowVisualizer.ViewModels
             }
         }
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
-        }
     }
 }

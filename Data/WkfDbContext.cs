@@ -17,6 +17,10 @@ public partial class WkfDbContext : DbContext
     {
     }
 
+    public virtual DbSet<StusCode> StusCodes { get; set; }
+
+    public virtual DbSet<UserGrupCode> UserGrupCodes { get; set; }
+
     public virtual DbSet<WkfActn> WkfActns { get; set; }
 
     public virtual DbSet<WkfActnCode> WkfActnCodes { get; set; }
@@ -44,6 +48,89 @@ public partial class WkfDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<StusCode>(entity =>
+        {
+            entity.HasKey(e => e.StatusCde).HasName("XPKSTATUS_CODE");
+
+            entity.ToTable("STUS_CODE");
+
+            entity.Property(e => e.StatusCde)
+                .HasMaxLength(5)
+                .IsUnicode(false)
+                .HasColumnName("status_cde");
+            entity.Property(e => e.ActiveInd)
+                .HasDefaultValue(true)
+                .HasColumnName("active_ind");
+            entity.Property(e => e.ExecutionDte)
+                .HasColumnType("datetime")
+                .HasColumnName("execution_dte");
+            entity.Property(e => e.ExecutionOffset).HasColumnName("EXECUTION_OFFSET");
+            entity.Property(e => e.LanguageCde)
+                .HasMaxLength(5)
+                .IsUnicode(false)
+                .HasColumnName("LANGUAGE_CDE");
+            entity.Property(e => e.RecordVer).HasColumnName("RECORD_VER");
+            entity.Property(e => e.SessionCde)
+                .HasMaxLength(25)
+                .IsUnicode(false)
+                .HasColumnName("SESSION_CDE");
+            entity.Property(e => e.SessionId).HasColumnName("SESSION_ID");
+            entity.Property(e => e.StatusDsc)
+                .HasMaxLength(100)
+                .HasColumnName("status_dsc");
+            entity.Property(e => e.StatusSeqId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("STATUS_SEQ_ID");
+            entity.Property(e => e.SysInd)
+                .HasDefaultValueSql("(NULL)")
+                .HasColumnName("sys_ind");
+        });
+
+        modelBuilder.Entity<UserGrupCode>(entity =>
+        {
+            entity.HasKey(e => e.UserGrupCde).HasName("PK_UGCDE__UGCDE");
+
+            entity.ToTable("USER_GRUP_CODE");
+
+            entity.Property(e => e.UserGrupCde)
+                .HasMaxLength(5)
+                .IsUnicode(false)
+                .HasColumnName("user_grup_cde");
+            entity.Property(e => e.ActiveInd)
+                .HasDefaultValue(true)
+                .HasColumnName("active_ind");
+            entity.Property(e => e.AdminInd).HasColumnName("admin_ind");
+            entity.Property(e => e.CanApprove).HasColumnName("can_approve");
+            entity.Property(e => e.CrdtRcmdApprInd).HasColumnName("crdt_rcmd_appr_ind");
+            entity.Property(e => e.ExecutionDte)
+                .HasColumnType("datetime")
+                .HasColumnName("execution_dte");
+            entity.Property(e => e.ExecutionOffset).HasColumnName("EXECUTION_OFFSET");
+            entity.Property(e => e.IsMCollAllow).HasColumnName("is_mColl_allow");
+            entity.Property(e => e.NatnWrqu)
+                .HasDefaultValue(false)
+                .HasColumnName("natn_wrqu");
+            entity.Property(e => e.RecordVer).HasColumnName("RECORD_VER");
+            entity.Property(e => e.RoleCde)
+                .HasMaxLength(5)
+                .IsUnicode(false)
+                .HasColumnName("role_cde");
+            entity.Property(e => e.SessionCde)
+                .HasMaxLength(25)
+                .IsUnicode(false)
+                .HasColumnName("SESSION_CDE");
+            entity.Property(e => e.SessionId).HasColumnName("SESSION_ID");
+            entity.Property(e => e.SysInd)
+                .HasDefaultValue(false)
+                .HasColumnName("sys_ind");
+            entity.Property(e => e.UserGroupDsc)
+                .HasMaxLength(50)
+                .HasColumnName("user_group_dsc");
+            entity.Property(e => e.UserGroupSeqId)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("user_group_seq_id");
+        });
+
         modelBuilder.Entity<WkfActn>(entity =>
         {
             entity.HasKey(e => e.ActionId).HasName("PK__WKF_ACTN__A7EC83712DF1BF10");
