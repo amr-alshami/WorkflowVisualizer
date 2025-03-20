@@ -330,24 +330,7 @@ namespace WorkflowVisualizer
 
             WorkflowCanvas.Children.Add(arrowhead);
         }
-        private void ZoomIn_Click(object sender, RoutedEventArgs e)
-        {
-            // Logic to zoom in on the canvas
-            var scaleTransform = new ScaleTransform(1.2, 1.2);
-            WorkflowCanvas.LayoutTransform = scaleTransform;
-            refreshView();
-        }
-
-        private void ZoomOut_Click(object sender, RoutedEventArgs e)
-        {
-            // Logic to zoom out on the canvas
-            var scaleTransform = new ScaleTransform(0.8, 0.8);
-            WorkflowCanvas.LayoutTransform = scaleTransform;
-            // Force a layout update to refresh the ActualWidth property
-            WorkflowCanvas.UpdateLayout();
-
-            refreshView();
-        }
+    
 
         private void Resize(string type)
         {
