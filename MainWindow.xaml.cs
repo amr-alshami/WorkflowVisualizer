@@ -141,7 +141,7 @@ namespace WorkflowVisualizer
                 // Icon does not exist
             }
 
-            if (iconExists)
+            if (iconExists && node.NodeType != "Rule")
             {
                 // Draw node with icon
                 var image = new Image
@@ -152,7 +152,7 @@ namespace WorkflowVisualizer
                     
                 };
 
-                setImageSize(image, node.Name);
+                setImageSize(image, node.Name.ToLower());
 
                 Canvas.SetLeft(image, node.X - image.Width / 2);
                 Canvas.SetTop(image, node.Y - image.Height / 2);
@@ -184,9 +184,9 @@ namespace WorkflowVisualizer
                 var icon = new Image
                 {
                     Source = new BitmapImage(ruleIconUri),
-                    Width = 45,
-                    Height = 45,
-                    Margin = new Thickness(-25,-25,5,-25)
+                    Width = 30,
+                    Height = 30,
+                    Margin = new Thickness(-20,-25,5,-25)
                 };
 
                 var textBlock = new TextBlock
@@ -240,17 +240,21 @@ namespace WorkflowVisualizer
         {
             switch (name)
             {
-                case "Start":
+                case "start":
                     image.Width = 60;
                     image.Height = 60;
                     break;
-                case "End":
+                case "end":
                     image.Width = 40;
                     image.Height = 40;
                     break;
+                case "auto approve":
+                    image.Width = 60;
+                    image.Height = 60;
+                    break;
                 default:
-                    image.Width = 55;
-                    image.Height = 55;
+                    image.Width = 80;
+                    image.Height = 80;
                     break;
             }
         }
