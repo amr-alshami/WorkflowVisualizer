@@ -1,9 +1,11 @@
 ﻿
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
+using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using WorkflowVisualizer.Models.Custom;
@@ -13,18 +15,24 @@ namespace WorkflowVisualizer
 {
     public partial class MainWindow : Window
     {
+
         private WorkflowViewModel _viewModel;
         private WorkflowModel _model;
         private bool _isExpanded = false;
+        private BlurEffect _blurEffect;
 
         public MainWindow()
         {
             InitializeComponent();
+
             _viewModel = new WorkflowViewModel(WorkflowCanvas);
             DataContext = _viewModel; // Set DataContext to the ViewModel
 
             // Bind the ListView to the filtered collection
             WorkflowListView.ItemsSource = _viewModel.FilteredWorkflows;
+
+            // Initialize the blur effect
+            _blurEffect = new BlurEffect { Radius = 5 };
         }
 
         // Handle search box text changes
@@ -58,13 +66,21 @@ namespace WorkflowVisualizer
             }
         }
 
-
         private void ShowDetailsPanel(WorkflowNode node)
         {
-            Resize("Out");
+           // Resize("Out");
             // Update the details for the selected node
             NodeNameText.Text = node.Name;
-            NodeDetailsText.Text = node.Details;
+            NodeDetailsText.Text = node.Discripton;
+
+            if (!string.IsNullOrEmpty(node.Detail))
+            {
+                NodeMiscDetails.Visibility = Visibility.Visible;
+                lblNodeMisc.Content = getNodeMiscDetailLabelName(node);
+                txtNodeMisc.Text = node.Detail;
+            }
+            else
+                NodeMiscDetails.Visibility = Visibility.Collapsed;
 
             // Fade-in text effect
             var fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromSeconds(0.3));
@@ -77,17 +93,76 @@ namespace WorkflowVisualizer
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseOut }
             };
             DetailsTransform.BeginAnimation(TranslateTransform.XProperty, slideIn);
+
+            // Apply blur effect to all elements except the clicked node
+            ApplyBlurEffect(node);
+        }
+
+        private string getNodeMiscDetailLabelName(WorkflowNode node)
+        {
+            var labelName = string.Empty;
+            switch (node.Name.ToLower())
+            {
+                case "forward":
+                    labelName = "Forward to: ";
+                    break;
+                case "change status":
+                    labelName = "New Status: ";
+                    break;
+            }
+            return labelName;
         }
 
         private void CloseDetailsPanel(object sender, RoutedEventArgs e)
         {
-            Resize("In");
+            //Resize("In");
             // Slide out the details panel
             var slideOut = new DoubleAnimation(DetailsPanel.Width, TimeSpan.FromSeconds(0.3))
             {
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseIn }
             };
             DetailsTransform.BeginAnimation(TranslateTransform.XProperty, slideOut);
+
+            // Remove blur effect from all elements
+            RemoveBlurEffect();
+        }
+
+        private void ApplyBlurEffect(WorkflowNode node)
+        {
+            foreach (var child in WorkflowCanvas.Children)
+            {
+                if (child is UIElement element && element.Uid is string elementId)
+                {
+                    if (elementId != node.Id)
+                    {
+                        ApplyAnimatedBlurEffect(element, 0, 5, 0.3); // Animate blur effect from 0 to 8 over 0.3 seconds
+                    }
+                    else
+                    {
+                        ApplyAnimatedBlurEffect(element, 5, 0, 0.3); // Animate blur effect from 8 to 0 over 0.3 seconds
+                    }
+                }
+            }
+        }
+
+
+        private void RemoveBlurEffect()
+        {
+            foreach (var child in WorkflowCanvas.Children)
+            {
+                if (child is UIElement element && element.Effect is BlurEffect blurEffect)
+                {
+                    var animation = new DoubleAnimation
+                    {
+                        From = blurEffect.Radius,
+                        To = 0,
+                        Duration = TimeSpan.FromSeconds(0.3),
+                        EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
+                    };
+
+                    blurEffect.BeginAnimation(BlurEffect.RadiusProperty, animation);
+                }
+            }
         }
 
         private void TogglePanelSize(object sender, RoutedEventArgs e)
@@ -95,6 +170,9 @@ namespace WorkflowVisualizer
             _isExpanded = !_isExpanded;
 
             var newWidth = _isExpanded ? 600 : 250;
+
+            txtNodeMisc.MaxWidth = _isExpanded ? 500 : 150;
+
             var animation = new DoubleAnimation(newWidth, TimeSpan.FromSeconds(0.3))
             {
                 EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
@@ -120,9 +198,9 @@ namespace WorkflowVisualizer
                 DrawNode(node, isAnimate);
             }
         }
-
         private void DrawNode(WorkflowNode node, bool isAnimate = true)
         {
+            node.Id = Guid.NewGuid().ToString();
             // Check if an icon exists for the node
             var iconPath = $"pack://application:,,,/Resources/{node.Name}.png";
             var iconUri = new Uri(iconPath, UriKind.Absolute);
@@ -148,8 +226,8 @@ namespace WorkflowVisualizer
                 {
                     Source = new BitmapImage(iconUri),
                     Cursor = Cursors.Hand,
-                    ToolTip = node.Name
-                    
+                    ToolTip = node.Name,
+                    Uid = node.Id // Set Uid to node's Id
                 };
 
                 setImageSize(image, node.Name.ToLower());
@@ -178,7 +256,7 @@ namespace WorkflowVisualizer
                     Orientation = Orientation.Horizontal,
                     Background = Brushes.White,
                     Cursor = Cursors.Hand,
-                    ToolTip = node.Details
+                    ToolTip = node.Discripton
                 };
 
                 var icon = new Image
@@ -186,7 +264,7 @@ namespace WorkflowVisualizer
                     Source = new BitmapImage(ruleIconUri),
                     Width = 30,
                     Height = 30,
-                    Margin = new Thickness(-20,-25,5,-25)
+                    Margin = new Thickness(-20, -25, 5, -25)
                 };
 
                 var textBlock = new TextBlock
@@ -205,12 +283,13 @@ namespace WorkflowVisualizer
                 // Create a Border with rounded corners
                 var border = new Border
                 {
-                    CornerRadius = new CornerRadius(10), // Adjust the radius for rounded corners
-                    BorderBrush = Brushes.Gray, // Border color
-                    BorderThickness = new Thickness(2), // Border thickness
-                    Background = Brushes.White, // Background color
-                    Padding = new Thickness(2), // Padding inside the border
-                    Child = stackPanel // Add the StackPanel as the child of the Border
+                    Uid = node.Id, // Set Uid to node's Id
+                    CornerRadius = new CornerRadius(10),
+                    BorderBrush = Brushes.Gray,
+                    BorderThickness = new Thickness(2),
+                    Background = Brushes.White,
+                    Padding = new Thickness(2),
+                    Child = stackPanel
                 };
 
                 // Force a layout update to calculate ActualWidth and ActualHeight
@@ -235,7 +314,6 @@ namespace WorkflowVisualizer
                 }
             }
         }
-
         private void setImageSize(Image image, string name)
         {
             switch (name)
@@ -334,36 +412,48 @@ namespace WorkflowVisualizer
 
             WorkflowCanvas.Children.Add(arrowhead);
         }
-    
 
-        private void Resize(string type)
+
+        //private void Resize(string type)
+        //{
+        //    if (type == "Out")
+        //    {
+        //        WorkflowCanvas.Margin = new Thickness(200, 0, 250, 0);
+        //    }
+        //    else
+        //    {
+        //        WorkflowCanvas.Margin = new Thickness(200, 0, 0, 0);
+        //    }
+
+        //    // Force a layout update to refresh the ActualWidth property
+
+        //    WorkflowCanvas.UpdateLayout();
+           
+        //    refreshView();
+        //}
+
+        //private void refreshView()
+        //{
+        //      // Load the selected workflow details
+        //    _viewModel.ApplyHierarchicalLayout();
+
+        //    // Draw the workflow graph
+        //    DrawGraph(false);
+        //}
+        private void ApplyAnimatedBlurEffect(UIElement element, double fromRadius, double toRadius, double durationInSeconds)
         {
-            if (type == "Out")
+            var blurEffect = new BlurEffect();
+            element.Effect = blurEffect;
+
+            var animation = new DoubleAnimation
             {
-                WorkflowCanvas.Margin = new Thickness(200, 0, 200, 0);
-            }
-            else
-            {
-                WorkflowCanvas.Margin = new Thickness(200, 0, 0, 0);
-            }
+                From = fromRadius,
+                To = toRadius,
+                Duration = TimeSpan.FromSeconds(durationInSeconds),
+                EasingFunction = new QuadraticEase { EasingMode = EasingMode.EaseInOut }
+            };
 
-            // Force a layout update to refresh the ActualWidth property
-            WorkflowCanvas.UpdateLayout();
-
-            refreshView();
-        }
-
-        private void refreshView()
-        {
-            // Clear existing nodes and edges
-            _viewModel.Nodes.Clear();
-            _viewModel.Edges.Clear();
-
-            // Load the selected workflow details
-            _viewModel.CreateNodesAndEdges(_model);
-
-            // Draw the workflow graph
-            DrawGraph(false);
+            blurEffect.BeginAnimation(BlurEffect.RadiusProperty, animation);
         }
     }
 }

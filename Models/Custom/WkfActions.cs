@@ -5,6 +5,8 @@
         public string? ActionName { get; set; }
         public int ActionCode { get; set; }
         public int ActionSequence { get; set; }
-        public string Details { get; set; }
+        public string Discription { get; set; }
+        public string Detail { get; set; }
+
     }
 }

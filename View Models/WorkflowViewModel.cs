@@ -68,7 +68,7 @@ namespace WorkflowVisualizer.ViewModels
                         {
                             RuleId = actn.RuleId ?? 0,
                             RuleName = _wkfRules.FirstOrDefault(t => t.RuleId == actn.RuleId)?.RuleDsc,
-                            Details = _wkfMiscInfo?.LastOrDefault(t => t.RefType == "Rule" && t.RefId == actn.RuleId)?.Detail ?? string.Empty,
+                            Discrption = _wkfMiscInfo?.LastOrDefault(t => t.RefType == "Rule" && t.RefId == actn.RuleId)?.Detail ?? string.Empty,
                             Actions = new List<WkfActions>()
                         });
                     }
@@ -80,8 +80,8 @@ namespace WorkflowVisualizer.ViewModels
                             ActionCode = actn.ActionCde ?? 0,
                             ActionName = _wkfActionCodes.FirstOrDefault(t => t.ActionCde == actn.ActionCde)?.ActionDsc,
                             ActionSequence = actn.ExeSequence ?? 0,
-                            //Details = _wkfMiscInfo?.LastOrDefault(t => t.RefType == "Action Code" && t.RefId == actn.ActionCde)?.Detail ?? string.Empty,
-                            Details = getActionCodeDetails(actn)
+                            Discription = _wkfMiscInfo?.LastOrDefault(t => t.RefType == "Action Code" && t.RefId == actn.ActionCde)?.Detail ?? string.Empty,
+                            Detail = getActionCodeDetails(actn)
                         });
                     }
                 }
@@ -98,19 +98,19 @@ namespace WorkflowVisualizer.ViewModels
 
         private string getActionCodeDetails(WkfActn actn)
         {
-            var details = _wkfMiscInfo?.LastOrDefault(t => t.RefType == "Action Code" && t.RefId == actn.ActionCde)?.Detail ?? string.Empty; 
+            var details = string.Empty; 
 
             string[] parts = actn.Params?.Split(',');
 
             if (parts != null)
             {
-                 switch (actn.ActionCde)
+                switch (actn.ActionCde)
                 {
                     case 2:// Forward
-                        details = parts[1].Trim('\'') != "0" ? "Request Forwarded to: " + _userGroupCodes.FirstOrDefault(t => t.UserGrupCde == parts[1].Trim('\''))?.UserGroupDsc + " user group" : details;
+                        details = parts[1].Trim('\'') != "0" ?  _userGroupCodes.FirstOrDefault(t => t.UserGrupCde == parts[1].Trim('\''))?.UserGroupDsc : details;
                         break;
                     case 4: // Change Status
-                        details = "Change Request Status to: ( " + _stsCodes.FirstOrDefault(t => t.StatusCde == parts[0].Trim('\''))?.StatusDsc + " )";
+                        details =  _stsCodes.FirstOrDefault(t => t.StatusCde == parts[0].Trim('\''))?.StatusDsc;
                         break;
                 }
             }
@@ -144,7 +144,7 @@ namespace WorkflowVisualizer.ViewModels
 
             foreach (var rule in workflow.WorkflowRules)
             {
-                var ruleNode = new WorkflowNode(rule.RuleName ?? "", 0, 0, "Rule", rule.Details);
+                var ruleNode = new WorkflowNode(rule.RuleName ?? "", 0, 0, "Rule", rule.Discrption, rule.Detail);
                 Nodes.Add(ruleNode);
 
                 // Connect Start Node to Rule Node
@@ -159,7 +159,7 @@ namespace WorkflowVisualizer.ViewModels
                     for (int i = 0; i < sortedActions.Count; i++)
                     {
                         var action = sortedActions[i];
-                        var actionNode = new WorkflowNode(action.ActionName ?? "", 0, 0, "Action", action.Details, action.ActionSequence);
+                        var actionNode = new WorkflowNode(action.ActionName ?? "", 0, 0, "Action", action.Discription, action.Detail, action.ActionSequence);
                         Nodes.Add(actionNode);
 
                         // Position action nodes sequentially
@@ -201,7 +201,7 @@ namespace WorkflowVisualizer.ViewModels
             ApplyHierarchicalLayout();
         }
 
-        private void ApplyHierarchicalLayout()
+        public void ApplyHierarchicalLayout()
         {
             // Get the number of levels (maximum depth of the graph)
             int maxLevel = Nodes.Max(n => n.NodeLevel) + 2; // +2 to include the Start node and end node
