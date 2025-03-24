@@ -19,7 +19,7 @@ namespace WorkflowVisualizer
         private WorkflowViewModel _viewModel;
         private WorkflowModel _model;
         private bool _isExpanded = false;
-        private BlurEffect _blurEffect;
+   
 
         public MainWindow()
         {
@@ -31,8 +31,6 @@ namespace WorkflowVisualizer
             // Bind the ListView to the filtered collection
             WorkflowListView.ItemsSource = _viewModel.FilteredWorkflows;
 
-            // Initialize the blur effect
-            _blurEffect = new BlurEffect { Radius = 5 };
         }
 
         // Handle search box text changes
@@ -135,11 +133,11 @@ namespace WorkflowVisualizer
                 {
                     if (elementId != node.Id)
                     {
-                        ApplyAnimatedBlurEffect(element, 0, 5, 0.3); // Animate blur effect from 0 to 8 over 0.3 seconds
+                        ApplyAnimatedBlurEffect(element, 0, 5, 0.3); // Animate blur effect from 0 to 5 over 0.3 seconds
                     }
                     else
                     {
-                        ApplyAnimatedBlurEffect(element, 5, 0, 0.3); // Animate blur effect from 8 to 0 over 0.3 seconds
+                        ApplyAnimatedBlurEffect(element, 5, 0, 0.3); // Animate blur effect from 5 to 0 over 0.3 seconds
                     }
                 }
             }
